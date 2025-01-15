@@ -1,31 +1,31 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
-interface FormState {
-    step: number;
-    formData: Record<string, any>;
-}
-
-const initialState: FormState = {
+const initialState = {
     step: 1,
-    formData: {},
+    formData: {
+        step1: {},
+        step2: {},
+        step3: {},
+    },
 };
 
 const formSlice = createSlice({
     name: 'form',
     initialState,
     reducers: {
+        saveStepData: (state, action) => {
+            const { step, data } = action.payload;
+            state.formData[`step${step}`] = data;
+        },
         nextStep: (state) => {
             state.step += 1;
         },
         prevStep: (state) => {
             state.step -= 1;
         },
-        saveData: (state, action: PayloadAction<Record<string, any>>) => {
-            state.formData = { ...state.formData, ...action.payload };
-        },
-        resetForm: () => initialState,
     },
 });
 
-export const { nextStep, prevStep, saveData, resetForm } = formSlice.actions;
+export const { saveStepData, nextStep, prevStep } = formSlice.actions;
+
 export default formSlice.reducer;

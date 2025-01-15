@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import AddressSection from '../formSections/AddressSection';
-import PersonalInformationSection from "@/components/formSections/PersonalInformationSection";
+import PersonalInformationSection from '@/components/formSections/PersonalInformationSection';
+import FileUploader from '@/utils/FileUploader';
 
 const statesList = [
     "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "District of Columbia",
@@ -16,9 +17,10 @@ const statesList = [
 
 interface Step1Props {
     onNext: (data: Record<string, any>) => void;
+    initialValues: Record<string, any>;
 }
 
-const Step1: React.FC<Step1Props> = ({ onNext }) => {
+const Step1: React.FC<Step1Props> = ({ onNext, initialValues  }) => {
     const formik = useFormik({
         initialValues: {
             personal_firstName: '',
@@ -40,35 +42,66 @@ const Step1: React.FC<Step1Props> = ({ onNext }) => {
             postal_state: '',
             postal_zip_code: '',
             same_as_physical_address: false,
+            personal_date_of_birth: '',
+            personal_email: '',
+            personal_license_photo: [],
+            ...initialValues,
         },
         validationSchema: Yup.object({
             personal_firstName: Yup.string().required('First name is required'),
-            personal_phone: Yup.string().matches(/^[0-9]{10}$/, 'Must be a valid 10-digit phone number').required('Phone number is required'),
+            personal_phone: Yup.string()
+                .matches(/^[0-9]{10}$/, 'Must be a valid 10-digit phone number')
+                .required('Phone number is required'),
             personal_occupation: Yup.string().required('Occupation is required'),
             personal_address_1: Yup.string().required('Address line 1 is required'),
             physical_city: Yup.string().required('City is required'),
             physical_state: Yup.string().required('State is required'),
-            physical_zip_code: Yup.string().matches(/^[0-9]{5}$/, 'Must be a valid 5-digit zip code').required('ZIP code is required'),
-            personal_ssn_part1: Yup.string().matches(/^\d{3}$/, 'Must be 3 digits').nullable(),
-            personal_ssn_part2: Yup.string().matches(/^\d{2}$/, 'Must be 2 digits').nullable(),
-            personal_ssn_part3: Yup.string().matches(/^\d{4}$/, 'Must be 4 digits').nullable(),
-        }).test('ssn-complete', 'SSN is required', function (values) {
-            const { personal_ssn_part1, personal_ssn_part2, personal_ssn_part3 } = values || {};
-            return (
-                personal_ssn_part1?.length === 3 &&
-                personal_ssn_part2?.length === 2 &&
-                personal_ssn_part3?.length === 4
-            );
+            personal_date_of_birth: Yup.date().required('Date of birth is required'),
+            personal_email: Yup.string().email('Invalid email format').required('Email is required'),
+            physical_zip_code: Yup.string()
+                .matches(/^[0-9]{5}$/, 'Must be a valid 5-digit zip code')
+                .required('ZIP code is required'),
+            personal_ssn_part1: Yup.string()
+                .matches(/^\d{3}$/, 'Must be 3 digits')
+                .required('SSN part 1 is required'),
+            personal_ssn_part2: Yup.string()
+                .matches(/^\d{2}$/, 'Must be 2 digits')
+                .required('SSN part 2 is required'),
+            personal_ssn_part3: Yup.string()
+                .matches(/^\d{4}$/, 'Must be 4 digits')
+                .required('SSN part 3 is required'),
         }),
+        enableReinitialize: true,
         onSubmit: (values) => {
             onNext(values);
         },
     });
 
+    useEffect(() => {
+        formik.setTouched({});
+    }, [initialValues]);
+
     return (
         <form onSubmit={formik.handleSubmit} className="p-4 border rounded shadow-md">
-            <PersonalInformationSection formik={formik} />
-            <AddressSection formik={formik} statesList={statesList} />
+            <PersonalInformationSection formik={formik}/>
+            <AddressSection formik={formik} statesList={statesList}/>
+            <FileUploader
+                title="License Photo"
+                fieldName="personal_license_photo"
+                formik={formik}
+                multiple={false}
+            />
+            <div className="flex justify-end mt-4">
+                <button
+                    type="submit"
+                    disabled={!formik.isValid}
+                    className={`px-4 py-2 rounded shadow text-white ${
+                        formik.isValid ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-400 cursor-not-allowed'
+                    }`}
+                >
+                    Submit and Continue
+                </button>
+            </div>
         </form>
     );
 };
