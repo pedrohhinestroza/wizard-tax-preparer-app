@@ -1,5 +1,14 @@
-import WizardForm from '@/components/wizardForm';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
-export default function Home() {
-    return <WizardForm />;
-}
+const Home = () => {
+    const router = useRouter();
+
+    useEffect(() => {
+        router.push('/tax-preparer-form'); // Redirect to the form route
+    }, [router]);
+
+    return null; // Render nothing while redirecting
+};
+
+export default Home;

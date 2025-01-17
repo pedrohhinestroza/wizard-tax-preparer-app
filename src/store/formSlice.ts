@@ -1,31 +1,36 @@
-import { createSlice } from '@reduxjs/toolkit';
+import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 
-const initialState = {
-    step: 1,
+interface FormState {
+    step: number;
     formData: {
-        step1: {},
-        step2: {},
-        step3: {},
-    },
+        [key: string]: any; // Dynamic keys for each step
+    };
+}
+
+const initialState: FormState = {
+    step: 1, // Tracks the current step in the wizard
+    formData: {}, // Holds data for each step
 };
 
 const formSlice = createSlice({
     name: 'form',
     initialState,
     reducers: {
-        saveStepData: (state, action) => {
+        saveStepData: (state, action: PayloadAction<{ step: number; data: any }>) => {
             const { step, data } = action.payload;
-            state.formData[`step${step}`] = data;
+            state.formData[`step${step}`] = data; // Save step data dynamically
         },
-        nextStep: (state) => {
+        nextStep(state) {
             state.step += 1;
         },
-        prevStep: (state) => {
+        prevStep(state) {
             state.step -= 1;
+        },
+        resetForm() {
+            return initialState;
         },
     },
 });
 
-export const { saveStepData, nextStep, prevStep } = formSlice.actions;
-
+export const { saveStepData, nextStep, prevStep, resetForm } = formSlice.actions;
 export default formSlice.reducer;

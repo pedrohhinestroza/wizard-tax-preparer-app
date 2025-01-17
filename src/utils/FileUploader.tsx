@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 
+const MAX_FILE_SIZE_MB = 5; // 5MB
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 interface FileUploaderProps {
     title: string;
     fieldName: string;
     formik: any;
-    multiple?: boolean; // Allow multiple files or single file
+    multiple?: boolean;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({ title, fieldName, formik, multiple = true }) => {
-    const [files, setFiles] = useState<File[]>(formik.values[fieldName] || []);
+    const [filePreviews, setFilePreviews] = useState<string[]>([]); // Preview URLs for display
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const uploadedFiles = event.target.files ? Array.from(event.target.files) : [];
@@ -16,43 +19,48 @@ const FileUploader: React.FC<FileUploaderProps> = ({ title, fieldName, formik, m
     };
 
     const processFiles = (uploadedFiles: File[]) => {
-        const validFiles = uploadedFiles.filter(file =>
-            ['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)
-        );
+        const validFiles = uploadedFiles.filter((file) => {
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                alert(`File "${file.name}" exceeds the maximum size of ${MAX_FILE_SIZE_MB}MB.`);
+                return false;
+            }
+            return ['image/jpeg', 'image/png', 'application/pdf'].includes(file.type);
+        });
 
         if (validFiles.length !== uploadedFiles.length) {
-            alert('Only PDF and image files are allowed.');
+            alert(`Some files were not uploaded due to exceeding the size limit of ${MAX_FILE_SIZE_MB}MB.`);
         }
 
-        const newFiles = multiple ? [...files, ...validFiles] : validFiles;
+        const newFilePreviews = validFiles.map((file) => URL.createObjectURL(file)); // Create preview URLs
+        setFilePreviews((prev) => (multiple ? [...prev, ...newFilePreviews] : newFilePreviews));
 
-        setFiles(newFiles);
-        formik.setFieldValue(fieldName, newFiles);
+        // Pass only file metadata to Formik
+        const fileMetadata = validFiles.map((file) => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+        }));
+
+        const updatedFiles = multiple
+            ? [...(formik.values[fieldName] || []), ...fileMetadata]
+            : fileMetadata;
+
+        formik.setFieldValue(fieldName, updatedFiles); // Store metadata, not raw files
     };
 
-    const handleFileDelete = (fileIndex: number) => {
-        const updatedFiles = files.filter((_, index) => index !== fileIndex);
-        setFiles(updatedFiles);
-        formik.setFieldValue(fieldName, updatedFiles);
-    };
+    const handleFileDelete = (index: number) => {
+        const updatedPreviews = filePreviews.filter((_, i) => i !== index);
+        setFilePreviews(updatedPreviews);
 
-    const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-        event.preventDefault();
-    };
-
-    const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        const uploadedFiles = Array.from(event.dataTransfer.files);
-        processFiles(uploadedFiles);
+        const updatedMetadata = (formik.values[fieldName] || []).filter((_, i) => i !== index);
+        formik.setFieldValue(fieldName, updatedMetadata);
     };
 
     return (
         <div className="mt-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">{title}</label>
             <div
-                className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer bg-gray-100`}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
+                className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer bg-gray-100"
             >
                 <p className="text-gray-600 mb-2">Drag and drop files here, or</p>
                 <label
@@ -71,14 +79,21 @@ const FileUploader: React.FC<FileUploaderProps> = ({ title, fieldName, formik, m
                 />
             </div>
 
-            {/* File List */}
+            {/* File Previews */}
             <ul className="mt-4 space-y-2">
-                {files.map((file, index) => (
+                {filePreviews.map((preview, index) => (
                     <li
                         key={index}
                         className="flex justify-between items-center bg-gray-50 border border-gray-200 p-2 rounded-md shadow-sm"
                     >
-                        <span className="text-sm text-gray-700">{file.name}</span>
+                        <a
+                            href={preview}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:underline truncate"
+                        >
+                            {formik.values[fieldName][index].name}
+                        </a>
                         <button
                             type="button"
                             onClick={() => handleFileDelete(index)}

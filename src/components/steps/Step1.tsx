@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, {useEffect, useState} from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import AddressSection from '../formSections/AddressSection';
 import PersonalInformationSection from '@/components/formSections/PersonalInformationSection';
 import FileUploader from '@/utils/FileUploader';
+import {getMissingFields} from "@/utils/common-utils";
 
 const statesList = [
     "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "District of Columbia",
@@ -21,6 +22,7 @@ interface Step1Props {
 }
 
 const Step1: React.FC<Step1Props> = ({ onNext, initialValues  }) => {
+    const [hovering, setHovering] = useState(false);
     const formik = useFormik({
         initialValues: {
             personal_firstName: '',
@@ -50,8 +52,11 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialValues  }) => {
         validationSchema: Yup.object({
             personal_firstName: Yup.string().required('First name is required'),
             personal_phone: Yup.string()
-                .matches(/^[0-9]{10}$/, 'Must be a valid 10-digit phone number')
-                .required('Phone number is required'),
+                .required('Phone number is required')
+                .matches(
+                    /^(\+1\s\(\d{3}\)\s\d{3}-\d{4}|^\d{10}$)$/,
+                    'Must be a valid US phone number (e.g., +1 (231) 231-2312 or 2312312312)'
+                ),
             personal_occupation: Yup.string().required('Occupation is required'),
             personal_address_1: Yup.string().required('Address line 1 is required'),
             physical_city: Yup.string().required('City is required'),
@@ -73,13 +78,15 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialValues  }) => {
         }),
         enableReinitialize: true,
         onSubmit: (values) => {
-            onNext(values);
+            onNext(values); // Pass metadata to Redux
         },
     });
 
     useEffect(() => {
-        formik.setTouched({});
+        formik.setTouched({}); // Reset touched state when initialValues change
     }, [initialValues]);
+
+    const missingFields = getMissingFields(formik);
 
     return (
         <form onSubmit={formik.handleSubmit} className="p-4 border rounded shadow-md">
@@ -92,15 +99,32 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialValues  }) => {
                 multiple={false}
             />
             <div className="flex justify-end mt-4">
-                <button
-                    type="submit"
-                    disabled={!formik.isValid}
-                    className={`px-4 py-2 rounded shadow text-white ${
-                        formik.isValid ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-400 cursor-not-allowed'
-                    }`}
+                <div
+                    className="relative inline-block"
+                    onMouseEnter={() => setHovering(true)}
+                    onMouseLeave={() => setHovering(false)}
                 >
-                    Submit and Continue
-                </button>
+                    <button
+                        type="submit"
+                        disabled={!formik.isValid}
+                        className={`px-4 py-2 rounded shadow text-white ${
+                            formik.isValid ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-400 cursor-not-allowed'
+                        }`}
+                    >
+                        Submit and Continue
+                    </button>
+                    {!formik.isValid && hovering && (
+                        <div
+                            className="absolute bottom-full mb-2 w-64 bg-white border border-gray-300 shadow-lg rounded p-2 z-10">
+                            <p className="text-sm text-red-500 font-medium mb-1">Missing Fields:</p>
+                            <ul className="list-disc list-inside text-sm text-gray-700">
+                                {missingFields.map((field, index) => (
+                                    <li key={index}>{field}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
             </div>
         </form>
     );

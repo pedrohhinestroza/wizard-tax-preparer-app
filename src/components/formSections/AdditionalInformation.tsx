@@ -2,6 +2,7 @@ import React, {useRef, useState} from 'react';
 import FileUploader from './../../utils/FileUploader';
 import SignatureCanvas from 'react-signature-canvas';
 import {renderLabel} from "@/utils/common-utils";
+import PhoneInput from "react-phone-input-2";
 
 interface AdditionalInformationProps {
     formik: any;
@@ -28,7 +29,6 @@ const AdditionalInformation: React.FC<AdditionalInformationProps> = ({ formik })
             alert('Please provide a signature before saving.');
         } else {
             const signatureData = ref.current.toDataURL();
-            console.log(`Saving signature for ${fieldName}:`, signatureData); // Debug log
             formik.setFieldValue(fieldName, signatureData);
             formik.setFieldTouched(fieldName, true, false); // Mark as touched
         }
@@ -351,18 +351,21 @@ const AdditionalInformation: React.FC<AdditionalInformationProps> = ({ formik })
                         </div>
 
                         <div className="mb-4">
-                            <label htmlFor="spouse_phone" className="block text-sm font-medium text-gray-700">
-                                Spouse Phone
-                            </label>
-                            <input
-                                id="spouse_phone"
-                                name="spouse_phone"
-                                type="text"
-                                maxLength={10}
-                                onChange={formik.handleChange}
+                            {renderLabel('Spouse Phone', true, 'spouse_phone')}
+                            <PhoneInput
+                                country={'us'}
                                 value={formik.values.spouse_phone}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                onChange={(phone) => formik.setFieldValue('spouse_phone', phone)}
+                                placeholder="Enter phone number"
+                                inputProps={{
+                                    name: 'spouse_phone',
+                                    required: true,
+                                    autoFocus: true,
+                                }}
                             />
+                            {formik.touched.spouse_phone && formik.errors.spouse_phone && (
+                                <div className="text-red-500 text-sm mt-1">{formik.errors.spouse_phone}</div>
+                            )}
                         </div>
                     </div>
 

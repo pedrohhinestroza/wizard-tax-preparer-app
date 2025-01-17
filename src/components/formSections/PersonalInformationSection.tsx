@@ -1,5 +1,7 @@
 import React from 'react';
 import { renderLabel } from "@/utils/common-utils";
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 
 interface PersonalInformationSectionProps {
     formik: any;
@@ -129,20 +131,16 @@ const PersonalInformationSection: React.FC<PersonalInformationSectionProps> = ({
             <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-6">
                     {renderLabel('Phone', true, 'personal_phone')}
-                    <input
-                        id="personal_phone"
-                        name="personal_phone"
-                        type="text"
-                        maxLength={10}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
+                    <PhoneInput
+                        country={'us'}
                         value={formik.values.personal_phone}
-                        className={`mt-1 block w-full px-3 py-2 border ${
-                            formik.touched.personal_phone && formik.errors.personal_phone
-                                ? 'border-red-500'
-                                : 'border-gray-300'
-                        } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-                        placeholder="1234567890"
+                        onChange={(phone) => formik.setFieldValue('personal_phone', phone)}
+                        placeholder="Enter phone number"
+                        inputProps={{
+                            name: 'personal_phone',
+                            required: true,
+                            autoFocus: true,
+                        }}
                     />
                     {formik.touched.personal_phone && formik.errors.personal_phone && (
                         <div className="text-red-500 text-sm mt-1">{formik.errors.personal_phone}</div>

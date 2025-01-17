@@ -1,7 +1,8 @@
-import React, { FC } from 'react';
+import React, {FC, useState} from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import AdditionalInformation from './../formSections/AdditionalInformation';
+import {getMissingFields} from "@/utils/common-utils";
 
 interface Step3Props {
     onNext: (data: Record<string, any>) => void;
@@ -10,6 +11,7 @@ interface Step3Props {
 }
 
 const Step3: FC<Step3Props> = ({ onNext, onPrev, initialValues }) => {
+    const [hovering, setHovering] = useState(false);
     const formik = useFormik({
         initialValues: {
             spouse: 'no',
@@ -53,6 +55,14 @@ const Step3: FC<Step3Props> = ({ onNext, onPrev, initialValues }) => {
                 then: () => Yup.string().required('Spouse first name is required'),
                 otherwise: () => Yup.string().nullable(), // Allow empty if no spouse
             }),
+            spouse_phone: Yup.string().when('spouse', {
+                is: 'yes',
+                then: () => Yup.string()
+                    .required('Phone number is required')
+                    .matches(
+                        /^(\+1\s\(\d{3}\)\s\d{3}-\d{4}|^\d{10}$)$/,
+                        'Must be a valid US phone number (e.g., +1 (231) 231-2312 or 2312312312)')
+            }),
             spouse_lastName: Yup.string().when('spouse', {
                 is: 'yes', // Condition for when the spouse is present
                 then: () => Yup.string().required('Spouse last name is required'),
@@ -95,25 +105,6 @@ const Step3: FC<Step3Props> = ({ onNext, onPrev, initialValues }) => {
                 is: 'yes',
                 then: () => Yup.string().required('SURI-PR password is required'),
             }),
-            dependents_documents: Yup.array().of(Yup.mixed()).when('has_dependents', {
-                is: 'yes',
-                then: () => Yup.array().min(1, 'At least one dependents document is required'),
-            }),
-            dependents_documents_creditTax_earned_income: Yup.array()
-                .of(Yup.mixed())
-                .when('has_dependents', {
-                    is: 'yes',
-                    then: () =>Yup.array().min(
-                        1,
-                        'At least one child tax or earned income tax document is required'
-                    ),
-                }),
-            num_dependents: Yup.number()
-                .integer('Number of dependents must be an integer')
-                .when('has_dependents', {
-                    is: 'yes',
-                    then: () => Yup.number().min(1, 'Must have at least one dependent'),
-                }),
             personal_signature: Yup.string()
                 .required('Personal signature is required')
                 .test(
@@ -137,6 +128,8 @@ const Step3: FC<Step3Props> = ({ onNext, onPrev, initialValues }) => {
         },
     });
 
+    const missingFields = getMissingFields(formik);
+
     return (
         <form onSubmit={formik.handleSubmit} className="p-4 border rounded shadow-md">
             <h3 className="text-lg font-semibold mb-4">Additional Information</h3>
@@ -149,7 +142,11 @@ const Step3: FC<Step3Props> = ({ onNext, onPrev, initialValues }) => {
                 >
                     Back
                 </button>
-                <div className="flex justify-end mt-4">
+                <div
+                    className="relative inline-block"
+                    onMouseEnter={() => setHovering(true)}
+                    onMouseLeave={() => setHovering(false)}
+                >
                     <button
                         type="submit"
                         disabled={!formik.isValid}
@@ -159,6 +156,17 @@ const Step3: FC<Step3Props> = ({ onNext, onPrev, initialValues }) => {
                     >
                         Submit and Send
                     </button>
+                    {!formik.isValid && hovering && (
+                        <div
+                            className="absolute bottom-full mb-2 w-64 bg-white border border-gray-300 shadow-lg rounded p-2 z-10">
+                            <p className="text-sm text-red-500 font-medium mb-1">Missing Fields:</p>
+                            <ul className="list-disc list-inside text-sm text-gray-700">
+                                {missingFields.map((field, index) => (
+                                    <li key={index}>{field}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
             </div>
         </form>

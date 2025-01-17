@@ -1,7 +1,7 @@
-import React, { useEffect, FC } from 'react';
+import React, { useEffect, FC, useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { renderLabel } from "@/utils/common-utils";
+import { getMissingFields, renderLabel} from "@/utils/common-utils";
 
 interface Step2Props {
     onNext: (data: Record<string, any>) => void;
@@ -10,6 +10,7 @@ interface Step2Props {
 }
 
 const Step2: FC<Step2Props> = ({ onNext, onPrev, initialValues }) => {
+    const [hovering, setHovering] = useState(false);
     const formik = useFormik({
         initialValues: {
             bank_name: '',
@@ -36,6 +37,8 @@ const Step2: FC<Step2Props> = ({ onNext, onPrev, initialValues }) => {
     useEffect(() => {
         formik.setTouched({});
     }, [initialValues]);
+
+    const missingFields = getMissingFields(formik);
 
     return (
         <form onSubmit={formik.handleSubmit} className="p-4 border rounded shadow-md">
@@ -128,7 +131,11 @@ const Step2: FC<Step2Props> = ({ onNext, onPrev, initialValues }) => {
                 >
                     Back
                 </button>
-                <div className="flex justify-end mt-4">
+                <div
+                    className="relative inline-block"
+                    onMouseEnter={() => setHovering(true)}
+                    onMouseLeave={() => setHovering(false)}
+                >
                     <button
                         type="submit"
                         disabled={!formik.isValid}
@@ -138,6 +145,17 @@ const Step2: FC<Step2Props> = ({ onNext, onPrev, initialValues }) => {
                     >
                         Submit and Continue
                     </button>
+                    {!formik.isValid && hovering && (
+                        <div
+                            className="absolute bottom-full mb-2 w-64 bg-white border border-gray-300 shadow-lg rounded p-2 z-10">
+                            <p className="text-sm text-red-500 font-medium mb-1">Missing Fields:</p>
+                            <ul className="list-disc list-inside text-sm text-gray-700">
+                                {missingFields.map((field, index) => (
+                                    <li key={index}>{field}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
             </div>
         </form>
